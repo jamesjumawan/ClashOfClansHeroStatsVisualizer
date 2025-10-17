@@ -1,76 +1,111 @@
-# Clash of Clans Hero Upgrade Visualizer
+# ⚔️ Clash of Clans Hero Upgrade Visualizer ⚔️
 
-An interactive web application that analyzes and visualizes percentage increases per level for all Clash of Clans hero statistics.
+An interactive web application that analyzes and visualizes percentage increases per level for all Clash of Clans hero statistics. This tool helps players make informed decisions about hero upgrades by showing which levels provide the best statistical improvements.
+
+## 🚀 Quick Start
+
+1. Open `index.html` in a modern web browser
+2. Select a hero from the dropdown menu to view detailed upgrade analysis
+3. Switch between different chart views (Percentage Increase, Raw Stats, Raw Increase)
+4. Use the cross-hero comparison table to identify the most efficient upgrades
 
 ## 📁 Project Structure
 
 ```
 clash/
-├── README.md                          # Project documentation
-├── hero_upgrade_visualizer.html       # Main application page
-├── temp.html                         # Temporary/test file
-├── assets/                           # Static assets
-│   ├── css/                         # Stylesheets
-│   │   └── hero_upgrade_visualizer.css
-│   └── js/                          # Client-side JavaScript
-│       ├── hero_upgrade_visualizer.js
-│       └── hero_upgrade_web_visualizer.js
-├── data/                            # JSON data files
-│   ├── archer_queen_stats.json     # Archer Queen statistics
-│   ├── barbarian_king_stats.json   # Barbarian King statistics
-│   ├── grand_warden_stats.json     # Grand Warden statistics
-│   ├── hero_hall_town_hall_mapping.json # Hero/TH mappings
-│   ├── minion_prince_stats.json    # Minion Prince statistics
-│   └── royal_champion_stats.json   # Royal Champion statistics
-├── src/                             # Core application logic
-│   ├── hero_stats_calculator.js    # Statistics calculation logic
-│   └── hero_upgrade_logic.js       # Hero upgrade business logic
-└── utils/                          # Utility functions (empty for now)
+├── index.html                        # Main application page
+├── README.md                         # Project documentation
+├── assets/                          # Static assets
+│   ├── css/
+│   │   └── hero_upgrade_visualizer.css  # Application styles
+│   └── js/
+│       ├── hero_upgrade_visualizer.js    # Core logic (Node.js compatible)
+│       └── hero_upgrade_web_visualizer.js # Browser-compatible wrapper
+├── data/                            # Hero statistics JSON files
+│   ├── archer_queen_stats.json     # Archer Queen upgrade data
+│   ├── barbarian_king_stats.json   # Barbarian King upgrade data
+│   ├── grand_warden_stats.json     # Grand Warden upgrade data
+│   ├── hero_hall_town_hall_mapping.json # Hero/Town Hall requirements
+│   ├── minion_prince_stats.json    # Minion Prince upgrade data
+│   └── royal_champion_stats.json   # Royal Champion upgrade data
+└── src/
+    └── hero_upgrade_logic.js       # Core business logic
 ```
-
-## 🚀 Getting Started
-
-1. Open `hero_upgrade_visualizer.html` in a modern web browser
-2. The application will automatically load hero data and generate interactive charts
-3. Explore the visualizations to analyze hero upgrade efficiency
 
 ## 📊 Features
 
-- **Interactive Charts**: Hover over data points for detailed information
-- **Cross-Hero Comparison**: Compare upgrade efficiency across all heroes
-- **Statistical Analysis**: View average, maximum, and minimum percentage increases
-- **Responsive Design**: Works on desktop and mobile devices
+### 🎯 Interactive Visualizations
+- **Hero Selection**: Choose any hero to view detailed upgrade analysis
+- **Multiple Chart Views**: 
+  - Percentage increase per level
+  - Raw stat values per level
+  - Raw stat increase per level
+- **Interactive Charts**: Hover over data points for detailed upgrade information
+- **Responsive Design**: Optimized for desktop and mobile viewing
 
-## 🛠️ Development
+### 📈 Statistical Analysis
+- **Summary Statistics**: Average, maximum, and minimum percentage increases
+- **Top Upgrades**: Identifies the most efficient upgrade levels
+- **Cross-Hero Comparison**: Side-by-side efficiency comparison
+- **Level-by-Level Breakdown**: Detailed analysis of each upgrade
 
-### File Organization
+### 🏆 Hero Coverage
+- **Barbarian King**: Damage, HP, and recovery analysis
+- **Archer Queen**: Complete upgrade efficiency metrics
+- **Grand Warden**: All stat progressions covered
+- **Royal Champion**: Full upgrade analysis
+- **Minion Prince**: Latest hero statistics included
 
-- **`/data/`**: Contains all JSON data files with hero statistics
-- **`/assets/css/`**: Stylesheets for visual presentation
-- **`/assets/js/`**: Client-side JavaScript for UI interactions
-- **`/src/`**: Core business logic and calculations
-- **`/utils/`**: Shared utility functions (future expansion)
+## 🔧 Technical Details
 
 ### Dependencies
+- **Chart.js**: Interactive chart rendering (loaded from CDN)
+- **Modern Browser**: ES6+ JavaScript support required
 
-- Chart.js (loaded from CDN)
-- Modern web browser with ES6 support
+### Architecture
+- **Modular Design**: Separate logic for Node.js and browser environments
+- **Data-Driven**: JSON-based hero statistics for easy updates
+- **Client-Side Processing**: No server required, runs entirely in browser
+- **Responsive CSS**: Mobile-first design approach
 
-## 📝 Notes
+### Data Structure
+Each hero data file contains:
+- Level-by-level stat progressions
+- Damage per second values
+- Hitpoint progressions  
+- Health recovery rates
+- Upgrade costs and requirements
 
-This project follows web development best practices:
-- Separation of concerns (data, presentation, logic)
-- Organized file structure
-- Modular JavaScript architecture
-- Responsive CSS design
+## 📱 Browser Compatibility
 
-## 🎮 About Clash of Clans Heroes
+- Chrome 60+
+- Firefox 55+
+- Safari 12+
+- Edge 79+
 
-This visualizer covers all major heroes:
-- Barbarian King
-- Archer Queen
-- Grand Warden
-- Royal Champion
-- Minion Prince
+## 🎮 Understanding the Data
 
-Each hero's damage per second, hitpoints, and health recovery statistics are analyzed to show upgrade efficiency at each level.
+### Chart Views Explained
+- **Percentage Increase**: Shows the % boost each level provides (most useful for efficiency)
+- **Raw Stats**: Displays actual stat values at each level
+- **Raw Increase**: Shows the numerical increase per level
+
+### Strategic Tips
+- Focus on levels with higher percentage increases for maximum efficiency
+- Use the comparison table to identify which heroes scale best
+- Green highlighting indicates the best performers in each category
+
+## 🔄 Future Enhancements
+
+- Equipment and ability analysis
+- Cost-efficiency calculations
+- Town Hall progression recommendations
+- Export functionality for planning tools
+
+## 📝 Data Sources
+
+Hero statistics are manually compiled from official Clash of Clans game data and community resources. Data is regularly updated to reflect game balance changes.
+
+---
+
+*Built for the Clash of Clans community to optimize hero upgrade strategies* 🏰
