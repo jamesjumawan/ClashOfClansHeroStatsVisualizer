@@ -1,0 +1,51 @@
+{
+  "heroHallToTownHallEquivalency": {
+    "description": "Mapping of Hero Hall levels to their equivalent Town Hall level requirements",
+    "mapping": [
+      {
+        "heroHallLevel": 1,
+        "townHallLevelRequired": 7
+      },
+      {
+        "heroHallLevel": 2,
+        "townHallLevelRequired": 8
+      },
+      {
+        "heroHallLevel": 3,
+        "townHallLevelRequired": 9
+      },
+      {
+        "heroHallLevel": 4,
+        "townHallLevelRequired": 10
+      },
+      {
+        "heroHallLevel": 5,
+        "townHallLevelRequired": 11
+      },
+      {
+        "heroHallLevel": 6,
+        "townHallLevelRequired": 12
+      },
+      {
+        "heroHallLevel": 7,
+        "townHallLevelRequired": 13
+      },
+      {
+        "heroHallLevel": 8,
+        "townHallLevelRequired": 14
+      },
+      {
+        "heroHallLevel": 9,
+        "townHallLevelRequired": 15
+      },
+      {
+        "heroHallLevel": 10,
+        "townHallLevelRequired": 16
+      },
+      {
+        "heroHallLevel": 11,
+        "townHallLevelRequired": 17
+      }
+    ]
+  }
+}

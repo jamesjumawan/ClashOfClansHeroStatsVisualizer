@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clash of Clans Hero Upgrade Visualizer</title>
+    <link rel="stylesheet" href="assets/css/hero_upgrade_visualizer.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚔️ Clash of Clans Hero Upgrade Visualizer ⚔️</h1>
+            <p>Interactive analysis of percentage increases per level for all hero stats</p>
+        </div>
+
+        <div id="loading" class="loading">
+            <p>Loading hero data...</p>
+        </div>
+
+        <div id="error" class="error" style="display: none;">
+            <h3>Error Loading Data</h3>
+            <p>Unable to load hero statistics. Please check the data files and try again.</p>
+        </div>
+
+        <div id="content" style="display: none;">
+            <!-- Hero sections will be dynamically generated here -->
+        </div>
+    </div>
+
+    <!-- Load the browser-compatible logic file and display script -->
+    <script src="assets/js/hero_upgrade_web_visualizer.js"></script>
+    <script>
+        // Enhanced display-specific logic for the HTML page
+        class HeroUpgradeVisualizer {
+            constructor() {
+                this.charts = {};
+                this.heroData = null;
+                this.processedData = null;
+            }
+
+            async loadData() {
+                try {
+                    // Load actual hero data from JSON files
+                    await this.loadHeroDataFromFiles();
+                    this.renderContent();
+                } catch (error) {
+                    console.error('Error loading data:', error);
+                    this.showError();
+                }
+            }
+
+            async loadHeroDataFromFiles() {
+                // Use the browser-compatible data loading function
+                if (window.HeroUpgradeLogic) {
+                    this.heroData = await window.HeroUpgradeLogic.loadHeroDataFromFiles();
+                    
+                    // Process the loaded data
+                    if (Object.keys(this.heroData).length > 0) {
+                        this.processedData = window.HeroUpgradeLogic.processAllHeroData(this.heroData);
+                    } else {
+                        throw new Error('No hero data loaded');
+                    }
+                } else {
+                    throw new Error('HeroUpgradeLogic not available');
+                }
+            }
+
+            renderContent() {
+                const loadingElement = document.getElementById('loading');
+                const contentElement = document.getElementById('content');
+                
+                loadingElement.style.display = 'none';
+                contentElement.style.display = 'block';
+
+                // Clear any existing content
+                contentElement.innerHTML = '';
+
+                // Generate hero sections with real data
+                this.renderHeroSections();
+                
+                // Generate comparison section with real data
+                this.renderComparisonSection();
+
+                // Initialize charts after content is rendered
+                setTimeout(() => this.initializeCharts(), 100);
+            }
+
+            renderHeroSections() {
+                const contentElement = document.getElementById('content');
+                const statTypes = ['damagePerSecond', 'hitpoints', 'healthRecovery'];
+                const statDisplayNames = ['Damage Per Second', 'Hitpoints', 'Health Recovery'];
+
+                Object.keys(this.processedData).forEach(heroName => {
+                    const heroSection = document.createElement('div');
+                    heroSection.className = 'hero-section';
+                    
+                    const heroTitle = document.createElement('div');
+                    heroTitle.className = 'hero-title';
+                    heroTitle.textContent = heroName;
+                    heroSection.appendChild(heroTitle);
+
+                    const statGrid = document.createElement('div');
+                    statGrid.className = 'stat-grid';
+
+                    statTypes.forEach((statType, index) => {
+                        const heroStats = this.processedData[heroName].stats[statType];
+                        if (!heroStats) return;
+
+                        const chartContainer = this.createChartContainer(
+                            heroName, 
+                            statType, 
+                            statDisplayNames[index], 
+                            heroStats
+                        );
+                        statGrid.appendChild(chartContainer);
+                    });
+
+                    heroSection.appendChild(statGrid);
+                    contentElement.appendChild(heroSection);
+                });
+            }
+
+            createChartContainer(heroName, statType, displayName, statsData) {
+                const container = document.createElement('div');
+                container.className = 'chart-container';
+
+                const chartId = `chart_${heroName.replace(/\s+/g, '')}_${statType}`;
+                
+                container.innerHTML = `
+                    <div class="chart-title">${displayName} Percentage Increase</div>
+                    <div class="chart-wrapper">
+                        <canvas id="${chartId}"></canvas>
+                    </div>
+                    <div class="summary-stats">
+                        <h4>📊 Summary Statistics</h4>
+                        <div class="stat-item">
+                            <span class="stat-label">Average Increase:</span>
+                            <span class="stat-value">${statsData.summary.avg.toFixed(2)}%</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Highest Increase:</span>
+                            <span class="stat-value">${statsData.summary.max.toFixed(2)}% (Level ${statsData.summary.maxLevel})</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Lowest Increase:</span>
+                            <span class="stat-value">${statsData.summary.min.toFixed(2)}% (Level ${statsData.summary.minLevel})</span>
+                        </div>
+                        <div style="margin-top: 15px;">
+                            <strong>🏆 Top 3 Increases:</strong>
+                            ${statsData.topIncreases.map((inc, i) => `
+                                <div class="stat-item">
+                                    <span class="stat-label">${i + 1}. Level ${inc.level}:</span>
+                                    <span class="stat-value">+${inc.value.toFixed(2)}% (${inc.previousValue} → ${inc.actualValue})</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+
+                return container;
+            }
+
+            renderComparisonSection() {
+                const contentElement = document.getElementById('content');
+                const comparisonSection = document.createElement('div');
+                comparisonSection.className = 'comparison-section';
+                
+                const title = document.createElement('div');
+                title.className = 'comparison-title';
+                title.textContent = '🔍 Cross-Hero Comparison';
+                comparisonSection.appendChild(title);
+
+                const table = this.createComparisonTable();
+                comparisonSection.appendChild(table);
+
+                const legend = this.createLegend();
+                comparisonSection.appendChild(legend);
+
+                contentElement.appendChild(comparisonSection);
+            }
+
+            createComparisonTable() {
+                const table = document.createElement('table');
+                table.className = 'comparison-table';
+
+                // Create header
+                const thead = document.createElement('thead');
+                thead.innerHTML = `
+                    <tr>
+                        <th>Hero</th>
+                        <th>DPS Avg %</th>
+                        <th>DPS Max %</th>
+                        <th>HP Avg %</th>
+                        <th>HP Max %</th>
+                        <th>Recovery Avg %</th>
+                        <th>Recovery Max %</th>
+                    </tr>
+                `;
+                table.appendChild(thead);
+
+                // Create body with comparison data
+                const tbody = document.createElement('tbody');
+                const comparisonData = this.generateComparisonTableData();
+                
+                comparisonData.rows.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>${row.hero}</strong></td>
+                        <td class="${row.dpsAvgHighlight ? 'highlight-max' : ''}">${row.dpsAvg}</td>
+                        <td class="${row.dpsMaxHighlight ? 'highlight-max' : ''}">${row.dpsMax}</td>
+                        <td class="${row.hpAvgHighlight ? 'highlight-max' : ''}">${row.hpAvg}</td>
+                        <td class="${row.hpMaxHighlight ? 'highlight-max' : ''}">${row.hpMax}</td>
+                        <td class="${row.recoveryAvgHighlight ? 'highlight-max' : ''}">${row.recoveryAvg}</td>
+                        <td class="${row.recoveryMaxHighlight ? 'highlight-max' : ''}">${row.recoveryMax}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+                table.appendChild(tbody);
+                return table;
+            }
+
+            generateComparisonTableData() {
+                const rows = [];
+                const maxValues = {};
+
+                // Calculate max values for highlighting
+                const statTypes = ['damagePerSecond', 'hitpoints', 'healthRecovery'];
+                ['Avg', 'Max'].forEach(type => {
+                    statTypes.forEach(stat => {
+                        const key = `${stat}${type}`;
+                        maxValues[key] = Math.max(...Object.keys(this.processedData).map(hero => {
+                            const heroStats = this.processedData[hero].stats[stat];
+                            return heroStats ? heroStats.summary[type.toLowerCase()] : 0;
+                        }));
+                    });
+                });
+
+                // Generate rows
+                Object.keys(this.processedData).forEach(heroName => {
+                    const heroStats = this.processedData[heroName].stats;
+                    
+                    const dpsAvg = heroStats.damagePerSecond?.summary.avg || 0;
+                    const dpsMax = heroStats.damagePerSecond?.summary.max || 0;
+                    const hpAvg = heroStats.hitpoints?.summary.avg || 0;
+                    const hpMax = heroStats.hitpoints?.summary.max || 0;
+                    const recoveryAvg = heroStats.healthRecovery?.summary.avg || 0;
+                    const recoveryMax = heroStats.healthRecovery?.summary.max || 0;
+
+                    rows.push({
+                        hero: heroName,
+                        dpsAvg: dpsAvg.toFixed(2) + '%',
+                        dpsMax: dpsMax.toFixed(2) + '%',
+                        hpAvg: hpAvg.toFixed(2) + '%',
+                        hpMax: hpMax.toFixed(2) + '%',
+                        recoveryAvg: recoveryAvg.toFixed(2) + '%',
+                        recoveryMax: recoveryMax.toFixed(2) + '%',
+                        dpsAvgHighlight: dpsAvg === maxValues.damagePerSecondAvg,
+                        dpsMaxHighlight: dpsMax === maxValues.damagePerSecondMax,
+                        hpAvgHighlight: hpAvg === maxValues.hitpointsAvg,
+                        hpMaxHighlight: hpMax === maxValues.hitpointsMax,
+                        recoveryAvgHighlight: recoveryAvg === maxValues.healthRecoveryAvg,
+                        recoveryMaxHighlight: recoveryMax === maxValues.healthRecoveryMax
+                    });
+                });
+
+                return { rows, maxValues };
+            }
+
+            createLegend() {
+                const legend = document.createElement('div');
+                legend.className = 'legend';
+                legend.innerHTML = `
+                    <h3>📈 How to Read This Data</h3>
+                    <p><strong>Average %:</strong> The typical percentage increase you get per level for that stat</p>
+                    <p><strong>Max %:</strong> The biggest single-level percentage boost available for that stat</p>
+                    <p><strong>Green highlighting:</strong> The hero with the best performance in that category</p>
+                    <p><strong>Interactive Charts:</strong> Hover over data points to see exact values and level information</p>
+                    <p><strong>Strategic Tip:</strong> Focus on heroes/levels with higher percentage increases for maximum efficiency!</p>
+                `;
+                return legend;
+            }
+
+            initializeCharts() {
+                Object.keys(this.processedData).forEach(heroName => {
+                    const statTypes = ['damagePerSecond', 'hitpoints', 'healthRecovery'];
+                    
+                    statTypes.forEach(statType => {
+                        const heroStats = this.processedData[heroName].stats[statType];
+                        if (!heroStats) return;
+
+                        const chartId = `chart_${heroName.replace(/\s+/g, '')}_${statType}`;
+                        const canvas = document.getElementById(chartId);
+                        
+                        if (canvas) {
+                            this.createChart(canvas, heroStats.chartData, heroStats.upgradeData);
+                        }
+                    });
+                });
+            }
+
+            createChart(canvas, chartData, upgradeData) {
+                const ctx = canvas.getContext('2d');
+                
+                const chart = new Chart(ctx, {
+                    type: 'line',
+                    data: chartData,
+                    options: getChartOptions(upgradeData)
+                });
+
+                this.charts[canvas.id] = chart;
+            }
+
+            showError() {
+                const loadingElement = document.getElementById('loading');
+                const errorElement = document.getElementById('error');
+                
+                loadingElement.style.display = 'none';
+                errorElement.style.display = 'block';
+            }
+        }
+
+        // Chart options that can be reused
+        function getChartOptions(upgradeData) {
+            return {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Percentage Increase (%)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Hero Level'
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            afterLabel: function(context) {
+                                const dataIndex = context.dataIndex;
+                                const data = upgradeData[dataIndex];
+                                
+                                if (data) {
+                                    return [
+                                        `Previous Value: ${data.previousValue}`,
+                                        `New Value: ${data.actualValue}`,
+                                        `Increase: +${data.value.toFixed(2)}%`
+                                    ];
+                                }
+                                return [];
+                            }
+                        }
+                    },
+                    legend: {
+                        display: false
+                    }
+                }
+            };
+        }
+
+        // Initialize the visualizer when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            const visualizer = new HeroUpgradeVisualizer();
+            visualizer.loadData();
+        });
+    </script>
+</body>
+</html>
