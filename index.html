@@ -12,6 +12,22 @@
         <div class="header">
             <h1>⚔️ Clash of Clans Hero Upgrade Visualizer ⚔️</h1>
             <p>Interactive analysis of percentage increases per level for all hero stats</p>
+            
+            <div class="hero-selector">
+                <label for="heroSelect">Select a Hero:</label>
+                <select id="heroSelect">
+                    <option value="">Choose a hero...</option>
+                </select>
+            </div>
+
+            <div class="view-selector">
+                <label for="viewSelect">Chart View:</label>
+                <select id="viewSelect">
+                    <option value="percentage">Percentage Increase per Level (%)</option>
+                    <option value="rawStats">Raw Stats per Level</option>
+                    <option value="rawIncrease">Raw Stat Increase per Level</option>
+                </select>
+            </div>
         </div>
 
         <div id="loading" class="loading">
@@ -37,6 +53,7 @@
                 this.charts = {};
                 this.heroData = null;
                 this.processedData = null;
+                this.currentView = 'percentage'; // Track current view
             }
 
             async loadData() {
@@ -76,6 +93,9 @@
                 // Clear any existing content
                 contentElement.innerHTML = '';
 
+                // Populate the hero selector dropdown
+                this.populateHeroSelector();
+
                 // Generate hero sections with real data
                 this.renderHeroSections();
                 
@@ -84,6 +104,84 @@
 
                 // Initialize charts after content is rendered
                 setTimeout(() => this.initializeCharts(), 100);
+
+                // Set up hero selector event listener
+                this.setupHeroSelector();
+            }
+
+            populateHeroSelector() {
+                const heroSelect = document.getElementById('heroSelect');
+                
+                // Clear existing options (except the first one)
+                heroSelect.innerHTML = '<option value="">Choose a hero...</option>';
+                
+                // Add hero options
+                Object.keys(this.processedData).forEach(heroName => {
+                    const option = document.createElement('option');
+                    option.value = heroName;
+                    option.textContent = heroName;
+                    heroSelect.appendChild(option);
+                });
+            }
+
+            setupHeroSelector() {
+                const heroSelect = document.getElementById('heroSelect');
+                const viewSelect = document.getElementById('viewSelect');
+                
+                heroSelect.addEventListener('change', (event) => {
+                    const selectedHero = event.target.value;
+                    this.showSelectedHero(selectedHero);
+                });
+
+                // Add view selector event listener
+                viewSelect.addEventListener('change', (event) => {
+                    this.currentView = event.target.value;
+                    this.updateChartsForCurrentView();
+                    this.updateComparisonTableForCurrentView();
+                });
+
+                // Initially show no heroes (only comparison section)
+                this.showSelectedHero('');
+            }
+
+            updateChartsForCurrentView() {
+                // Destroy existing charts
+                Object.values(this.charts).forEach(chart => chart.destroy());
+                this.charts = {};
+                
+                // Recreate charts with new view
+                this.initializeCharts();
+            }
+
+            updateComparisonTableForCurrentView() {
+                const existingTable = document.querySelector('.comparison-table');
+                if (existingTable) {
+                    const newTable = this.createComparisonTable();
+                    existingTable.parentNode.replaceChild(newTable, existingTable);
+                }
+            }
+
+            showSelectedHero(selectedHero) {
+                const heroSections = document.querySelectorAll('.hero-section');
+                
+                heroSections.forEach(section => {
+                    const heroTitle = section.querySelector('.hero-title');
+                    if (heroTitle) {
+                        const heroName = heroTitle.textContent.trim();
+                        
+                        if (selectedHero === '' || heroName === selectedHero) {
+                            section.style.display = selectedHero === '' ? 'none' : 'block';
+                        } else {
+                            section.style.display = 'none';
+                        }
+                    }
+                });
+
+                // Always show comparison section
+                const comparisonSection = document.querySelector('.comparison-section');
+                if (comparisonSection) {
+                    comparisonSection.style.display = 'block';
+                }
             }
 
             renderHeroSections() {
@@ -127,12 +225,29 @@
 
                 const chartId = `chart_${heroName.replace(/\s+/g, '')}_${statType}`;
                 
+                // Dynamic title based on current view
+                const viewTitles = {
+                    'percentage': `${displayName} Percentage Increase`,
+                    'rawStats': `${displayName} Raw Values`,
+                    'rawIncrease': `${displayName} Raw Increase per Level`
+                };
+                
                 container.innerHTML = `
-                    <div class="chart-title">${displayName} Percentage Increase</div>
+                    <div class="chart-title">${viewTitles[this.currentView]}</div>
                     <div class="chart-wrapper">
                         <canvas id="${chartId}"></canvas>
                     </div>
                     <div class="summary-stats">
+                        ${this.generateSummaryStatsHTML(statsData, displayName)}
+                    </div>
+                `;
+
+                return container;
+            }
+
+            generateSummaryStatsHTML(statsData, displayName) {
+                if (this.currentView === 'percentage') {
+                    return `
                         <h4>📊 Summary Statistics</h4>
                         <div class="stat-item">
                             <span class="stat-label">Average Increase:</span>
@@ -155,10 +270,88 @@
                                 </div>
                             `).join('')}
                         </div>
-                    </div>
-                `;
+                    `;
+                } else if (this.currentView === 'rawStats') {
+                    const rawData = statsData.rawStatsData || this.calculateRawStatsData(statsData);
+                    return `
+                        <h4>📊 Raw Stats Summary</h4>
+                        <div class="stat-item">
+                            <span class="stat-label">Starting Value (Level 1):</span>
+                            <span class="stat-value">${rawData.initial}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Final Value (Max Level):</span>
+                            <span class="stat-value">${rawData.final}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Total Growth:</span>
+                            <span class="stat-value">${rawData.totalGrowth}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Average per Level:</span>
+                            <span class="stat-value">${rawData.avgPerLevel}</span>
+                        </div>
+                    `;
+                } else {
+                    const increaseData = statsData.rawIncreaseData || this.calculateRawIncreaseData(statsData);
+                    return `
+                        <h4>📊 Raw Increase Summary</h4>
+                        <div class="stat-item">
+                            <span class="stat-label">Average Increase:</span>
+                            <span class="stat-value">${increaseData.avg}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Largest Increase:</span>
+                            <span class="stat-value">${increaseData.max} (Level ${increaseData.maxLevel})</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Smallest Increase:</span>
+                            <span class="stat-value">${increaseData.min} (Level ${increaseData.minLevel})</span>
+                        </div>
+                    `;
+                }
+            }
 
-                return container;
+            calculateRawStatsData(statsData) {
+                if (!statsData.upgradeData || statsData.upgradeData.length === 0) {
+                    return { initial: 'N/A', final: 'N/A', totalGrowth: 'N/A', avgPerLevel: 'N/A' };
+                }
+
+                const initial = statsData.upgradeData[0].previousValue;
+                const final = statsData.upgradeData[statsData.upgradeData.length - 1].actualValue;
+                const totalGrowth = final - initial;
+                const avgPerLevel = (totalGrowth / statsData.upgradeData.length).toFixed(1);
+
+                return {
+                    initial: initial.toLocaleString(),
+                    final: final.toLocaleString(),
+                    totalGrowth: totalGrowth.toLocaleString(),
+                    avgPerLevel: avgPerLevel
+                };
+            }
+
+            calculateRawIncreaseData(statsData) {
+                if (!statsData.upgradeData || statsData.upgradeData.length === 0) {
+                    return { avg: 'N/A', max: 'N/A', maxLevel: 'N/A', min: 'N/A', minLevel: 'N/A' };
+                }
+
+                const increases = statsData.upgradeData.map(upgrade => 
+                    upgrade.actualValue - upgrade.previousValue
+                );
+
+                const avg = (increases.reduce((sum, inc) => sum + inc, 0) / increases.length).toFixed(1);
+                const max = Math.max(...increases);
+                const min = Math.min(...increases);
+                const maxLevel = statsData.upgradeData[increases.indexOf(max)].level;
+                const minLevel = statsData.upgradeData[increases.indexOf(min)].level;
+
+                return {
+                    avg: avg,
+                    max: max.toLocaleString(),
+                    min: min.toLocaleString(),
+                    maxLevel: maxLevel,
+                    minLevel: minLevel
+                };
             }
 
             renderComparisonSection() {
@@ -303,13 +496,119 @@
             createChart(canvas, chartData, upgradeData) {
                 const ctx = canvas.getContext('2d');
                 
+                // Generate chart data based on current view
+                const viewChartData = this.generateChartDataForView(chartData, upgradeData);
+                
                 const chart = new Chart(ctx, {
                     type: 'line',
-                    data: chartData,
-                    options: getChartOptions(upgradeData)
+                    data: viewChartData,
+                    options: this.getChartOptionsForView(upgradeData)
                 });
 
                 this.charts[canvas.id] = chart;
+            }
+
+            generateChartDataForView(originalChartData, upgradeData) {
+                if (this.currentView === 'percentage') {
+                    return originalChartData;
+                } else if (this.currentView === 'rawStats') {
+                    // Generate raw stats chart data
+                    const labels = upgradeData.map(upgrade => `Level ${upgrade.level}`);
+                    const data = upgradeData.map(upgrade => upgrade.actualValue);
+                    
+                    return {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Raw Stat Values',
+                            data: data,
+                            borderColor: '#2ecc71',
+                            backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0
+                        }]
+                    };
+                } else {
+                    // Generate raw increase chart data
+                    const labels = upgradeData.map(upgrade => `Level ${upgrade.level}`);
+                    const data = upgradeData.map(upgrade => upgrade.actualValue - upgrade.previousValue);
+                    
+                    return {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Raw Stat Increase',
+                            data: data,
+                            borderColor: '#e74c3c',
+                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0
+                        }]
+                    };
+                }
+            }
+
+            getChartOptionsForView(upgradeData) {
+                const yAxisTitles = {
+                    'percentage': 'Percentage Increase (%)',
+                    'rawStats': 'Raw Stat Value',
+                    'rawIncrease': 'Raw Stat Increase'
+                };
+
+                return {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: this.currentView !== 'rawStats',
+                            title: {
+                                display: true,
+                                text: yAxisTitles[this.currentView]
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Hero Level'
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: (context) => {
+                                    const dataIndex = context.dataIndex;
+                                    const data = upgradeData[dataIndex];
+                                    
+                                    if (data) {
+                                        if (this.currentView === 'percentage') {
+                                            return [
+                                                `Previous Value: ${data.previousValue}`,
+                                                `New Value: ${data.actualValue}`,
+                                                `Increase: +${data.value.toFixed(2)}%`
+                                            ];
+                                        } else if (this.currentView === 'rawStats') {
+                                            return [
+                                                `Previous Level Value: ${data.previousValue}`,
+                                                `Raw Increase: +${data.actualValue - data.previousValue}`
+                                            ];
+                                        } else {
+                                            return [
+                                                `Previous Value: ${data.previousValue}`,
+                                                `New Value: ${data.actualValue}`,
+                                                `Raw Increase: +${data.actualValue - data.previousValue}`
+                                            ];
+                                        }
+                                    }
+                                    return [];
+                                }
+                            }
+                        },
+                        legend: {
+                            display: false
+                        }
+                    }
+                };
             }
 
             showError() {
@@ -319,51 +618,6 @@
                 loadingElement.style.display = 'none';
                 errorElement.style.display = 'block';
             }
-        }
-
-        // Chart options that can be reused
-        function getChartOptions(upgradeData) {
-            return {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Percentage Increase (%)'
-                        }
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Hero Level'
-                        }
-                    }
-                },
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            afterLabel: function(context) {
-                                const dataIndex = context.dataIndex;
-                                const data = upgradeData[dataIndex];
-                                
-                                if (data) {
-                                    return [
-                                        `Previous Value: ${data.previousValue}`,
-                                        `New Value: ${data.actualValue}`,
-                                        `Increase: +${data.value.toFixed(2)}%`
-                                    ];
-                                }
-                                return [];
-                            }
-                        }
-                    },
-                    legend: {
-                        display: false
-                    }
-                }
-            };
         }
 
         // Initialize the visualizer when the page loads

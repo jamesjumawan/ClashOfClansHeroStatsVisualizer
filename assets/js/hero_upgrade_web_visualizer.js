@@ -121,7 +121,7 @@ class HeroUpgradeWebVisualizer {
                 borderColor: colors[statType].border,
                 borderWidth: 2,
                 fill: false,
-                tension: 0.1
+                tension: 0
             }]
         };
     }
@@ -514,7 +514,7 @@ function generateChartData(heroName, statName, upgradeData) {
             borderColor: colors[statName].border,
             borderWidth: 2,
             fill: false,
-            tension: 0.1
+            tension: 0
         }]
     };
 }
