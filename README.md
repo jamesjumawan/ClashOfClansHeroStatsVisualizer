@@ -71,6 +71,11 @@ Each hero data file contains:
 
 Hero statistics are manually compiled from:
 - [Clash of Clans Wiki](https://clashofclans.fandom.com/wiki/Clash_of_Clans_Wiki)
+
+### 💡 Inspiration
+
+This project was inspired by [this Reddit post](https://www.reddit.com/r/ClashOfClans/comments/1mbdihj/plots_of_the_hp_and_dps_gain_of_the_heroes/) analyzing hero HP and DPS gains.
+
 ---
 
 *Built for the Clash of Clans community to optimize hero upgrade strategies* 🏰
