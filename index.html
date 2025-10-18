@@ -693,17 +693,31 @@
                         const canvas = document.getElementById(chartId);
                         
                         if (canvas) {
-                            this.createChart(canvas, heroStats.chartData, heroStats.upgradeData);
+                            this.createChart(canvas, heroStats.chartData, heroStats.upgradeData, statType);
                         }
                     });
                 });
             }
 
-            createChart(canvas, chartData, upgradeData) {
+            createChart(canvas, chartData, upgradeData, statType = null) {
                 const ctx = canvas.getContext('2d');
                 
+                // Determine stat type from canvas ID if not provided
+                if (!statType) {
+                    const canvasId = canvas.id;
+                    if (canvasId.includes('damagePerSecond')) {
+                        statType = 'damagePerSecond';
+                    } else if (canvasId.includes('hitpoints')) {
+                        statType = 'hitpoints';
+                    } else if (canvasId.includes('healthRecovery')) {
+                        statType = 'healthRecovery';
+                    } else {
+                        statType = 'damagePerSecond'; // default
+                    }
+                }
+                
                 // Generate chart data based on current view
-                const viewChartData = this.generateChartDataForView(chartData, upgradeData);
+                const viewChartData = this.generateChartDataForView(chartData, upgradeData, statType);
                 
                 const chart = new Chart(ctx, {
                     type: 'line',
@@ -714,11 +728,37 @@
                 this.charts[canvas.id] = chart;
             }
 
-            generateChartDataForView(originalChartData, upgradeData) {
+            generateChartDataForView(originalChartData, upgradeData, statType) {
+                // Define consistent colors for each stat type
+                const statColors = {
+                    'damagePerSecond': { 
+                        bg: 'rgba(255, 99, 132, 0.2)', 
+                        border: 'rgba(255, 99, 132, 1)' 
+                    },
+                    'hitpoints': { 
+                        bg: 'rgba(54, 162, 235, 0.2)', 
+                        border: 'rgba(54, 162, 235, 1)' 
+                    },
+                    'healthRecovery': { 
+                        bg: 'rgba(75, 192, 192, 0.2)', 
+                        border: 'rgba(75, 192, 192, 1)' 
+                    }
+                };
+
                 if (this.currentView === 'percentage') {
-                    return originalChartData;
+                    // Update the original chart data to use consistent colors
+                    const updatedChartData = { ...originalChartData };
+                    updatedChartData.datasets = originalChartData.datasets.map(dataset => ({
+                        ...dataset,
+                        borderColor: statColors[statType].border,
+                        backgroundColor: statColors[statType].bg,
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0
+                    }));
+                    return updatedChartData;
                 } else if (this.currentView === 'rawStats') {
-                    // Generate raw stats chart data
+                    // Generate raw stats chart data with consistent colors and filled style
                     const labels = upgradeData.map(upgrade => `Level ${upgrade.level}`);
                     const data = upgradeData.map(upgrade => upgrade.actualValue);
                     
@@ -727,15 +767,15 @@
                         datasets: [{
                             label: 'Raw Stat Values',
                             data: data,
-                            borderColor: '#2ecc71',
-                            backgroundColor: 'rgba(46, 204, 113, 0.1)',
-                            borderWidth: 3,
-                            fill: true,
+                            borderColor: statColors[statType].border,
+                            backgroundColor: statColors[statType].bg,
+                            borderWidth: 2,
+                            fill: true, // Filled for raw stats
                             tension: 0
                         }]
                     };
                 } else {
-                    // Generate raw increase chart data
+                    // Generate raw increase chart data with consistent colors and same style as percentage
                     const labels = upgradeData.map(upgrade => `Level ${upgrade.level}`);
                     const data = upgradeData.map(upgrade => upgrade.actualValue - upgrade.previousValue);
                     
@@ -744,10 +784,10 @@
                         datasets: [{
                             label: 'Raw Stat Increase',
                             data: data,
-                            borderColor: '#e74c3c',
-                            backgroundColor: 'rgba(231, 76, 60, 0.1)',
-                            borderWidth: 3,
-                            fill: true,
+                            borderColor: statColors[statType].border,
+                            backgroundColor: statColors[statType].bg,
+                            borderWidth: 2,
+                            fill: false, // Same style as percentage (not filled)
                             tension: 0
                         }]
                     };
