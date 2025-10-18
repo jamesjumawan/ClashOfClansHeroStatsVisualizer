@@ -148,12 +148,46 @@
                 // Update all chart titles first
                 this.updateChartTitles();
                 
+                // Update summary stats for current view
+                this.updateSummaryStatsForCurrentView();
+                
                 // Destroy existing charts
                 Object.values(this.charts).forEach(chart => chart.destroy());
                 this.charts = {};
                 
                 // Recreate charts with new view
                 this.initializeCharts();
+            }
+
+            updateSummaryStatsForCurrentView() {
+                // Update all summary stats blocks based on current view
+                const summaryStatsBlocks = document.querySelectorAll('.summary-stats');
+                
+                summaryStatsBlocks.forEach(summaryBlock => {
+                    const chartContainer = summaryBlock.closest('.chart-container');
+                    if (chartContainer) {
+                        const chartTitle = chartContainer.querySelector('.chart-title');
+                        if (chartTitle) {
+                            const heroName = chartTitle.getAttribute('data-hero');
+                            const statName = chartTitle.getAttribute('data-stat');
+                            
+                            // Find the corresponding stats data
+                            const statTypeMap = {
+                                'Damage Per Second': 'damagePerSecond',
+                                'Hitpoints': 'hitpoints', 
+                                'Health Recovery': 'healthRecovery'
+                            };
+                            
+                            const statType = statTypeMap[statName];
+                            if (heroName && statType && this.processedData[heroName]) {
+                                const statsData = this.processedData[heroName].stats[statType];
+                                if (statsData) {
+                                    summaryBlock.innerHTML = this.generateSummaryStatsHTML(statsData, statName);
+                                }
+                            }
+                        }
+                    }
+                });
             }
 
             updateChartTitles() {
