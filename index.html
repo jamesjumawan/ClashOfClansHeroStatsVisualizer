@@ -145,12 +145,33 @@
             }
 
             updateChartsForCurrentView() {
+                // Update all chart titles first
+                this.updateChartTitles();
+                
                 // Destroy existing charts
                 Object.values(this.charts).forEach(chart => chart.destroy());
                 this.charts = {};
                 
                 // Recreate charts with new view
                 this.initializeCharts();
+            }
+
+            updateChartTitles() {
+                // Update all chart titles based on current view
+                const chartTitles = document.querySelectorAll('.chart-title[data-hero][data-stat]');
+                
+                chartTitles.forEach(titleElement => {
+                    const heroName = titleElement.getAttribute('data-hero');
+                    const statName = titleElement.getAttribute('data-stat');
+                    
+                    const viewTitles = {
+                        'percentage': `${heroName} - ${statName} Percentage Increase`,
+                        'rawStats': `${heroName} - ${statName} Raw Values`,
+                        'rawIncrease': `${heroName} - ${statName} Raw Increase per Level`
+                    };
+                    
+                    titleElement.textContent = viewTitles[this.currentView];
+                });
             }
 
             updateComparisonTableForCurrentView() {
@@ -225,15 +246,15 @@
 
                 const chartId = `chart_${heroName.replace(/\s+/g, '')}_${statType}`;
                 
-                // Dynamic title based on current view
+                // Dynamic title based on current view and including hero name
                 const viewTitles = {
-                    'percentage': `${displayName} Percentage Increase`,
-                    'rawStats': `${displayName} Raw Values`,
-                    'rawIncrease': `${displayName} Raw Increase per Level`
+                    'percentage': `${heroName} - ${displayName} Percentage Increase`,
+                    'rawStats': `${heroName} - ${displayName} Raw Values`,
+                    'rawIncrease': `${heroName} - ${displayName} Raw Increase per Level`
                 };
                 
                 container.innerHTML = `
-                    <div class="chart-title">${viewTitles[this.currentView]}</div>
+                    <div class="chart-title" data-hero="${heroName}" data-stat="${displayName}">${viewTitles[this.currentView]}</div>
                     <div class="chart-wrapper">
                         <canvas id="${chartId}"></canvas>
                     </div>
@@ -367,9 +388,6 @@
                 const table = this.createComparisonTable();
                 comparisonSection.appendChild(table);
 
-                const legend = this.createLegend();
-                comparisonSection.appendChild(legend);
-
                 contentElement.appendChild(comparisonSection);
             }
 
@@ -377,17 +395,13 @@
                 const table = document.createElement('table');
                 table.className = 'comparison-table';
 
-                // Create header
+                // Create dynamic header based on current view
                 const thead = document.createElement('thead');
+                const headers = this.getComparisonTableHeaders();
                 thead.innerHTML = `
                     <tr>
                         <th>Hero</th>
-                        <th>DPS Avg %</th>
-                        <th>DPS Max %</th>
-                        <th>HP Avg %</th>
-                        <th>HP Max %</th>
-                        <th>Recovery Avg %</th>
-                        <th>Recovery Max %</th>
+                        ${headers.map(header => `<th>${header}</th>`).join('')}
                     </tr>
                 `;
                 table.appendChild(thead);
@@ -398,14 +412,10 @@
                 
                 comparisonData.rows.forEach(row => {
                     const tr = document.createElement('tr');
+                    const cells = this.generateTableRowCells(row);
                     tr.innerHTML = `
                         <td><strong>${row.hero}</strong></td>
-                        <td class="${row.dpsAvgHighlight ? 'highlight-max' : ''}">${row.dpsAvg}</td>
-                        <td class="${row.dpsMaxHighlight ? 'highlight-max' : ''}">${row.dpsMax}</td>
-                        <td class="${row.hpAvgHighlight ? 'highlight-max' : ''}">${row.hpAvg}</td>
-                        <td class="${row.hpMaxHighlight ? 'highlight-max' : ''}">${row.hpMax}</td>
-                        <td class="${row.recoveryAvgHighlight ? 'highlight-max' : ''}">${row.recoveryAvg}</td>
-                        <td class="${row.recoveryMaxHighlight ? 'highlight-max' : ''}">${row.recoveryMax}</td>
+                        ${cells.join('')}
                     `;
                     tbody.appendChild(tr);
                 });
@@ -414,65 +424,227 @@
                 return table;
             }
 
+            getComparisonTableHeaders() {
+                if (this.currentView === 'percentage') {
+                    return ['DPS Avg %', 'DPS Max %', 'HP Avg %', 'HP Max %', 'Recovery Avg %', 'Recovery Max %'];
+                } else if (this.currentView === 'rawStats') {
+                    return ['DPS Start', 'DPS Final', 'HP Start', 'HP Final', 'Recovery Start', 'Recovery Final'];
+                } else {
+                    return ['DPS Avg Inc', 'DPS Max Inc', 'HP Avg Inc', 'HP Max Inc', 'Recovery Avg Inc', 'Recovery Max Inc'];
+                }
+            }
+
+            generateTableRowCells(row) {
+                if (this.currentView === 'percentage') {
+                    return [
+                        `<td class="${row.dpsAvgHighlight ? 'highlight-max' : row.dpsAvgLowlight ? 'highlight-min' : ''}">${row.dpsAvg}</td>`,
+                        `<td class="${row.dpsMaxHighlight ? 'highlight-max' : row.dpsMaxLowlight ? 'highlight-min' : ''}">${row.dpsMax}</td>`,
+                        `<td class="${row.hpAvgHighlight ? 'highlight-max' : row.hpAvgLowlight ? 'highlight-min' : ''}">${row.hpAvg}</td>`,
+                        `<td class="${row.hpMaxHighlight ? 'highlight-max' : row.hpMaxLowlight ? 'highlight-min' : ''}">${row.hpMax}</td>`,
+                        `<td class="${row.recoveryAvgHighlight ? 'highlight-max' : row.recoveryAvgLowlight ? 'highlight-min' : ''}">${row.recoveryAvg}</td>`,
+                        `<td class="${row.recoveryMaxHighlight ? 'highlight-max' : row.recoveryMaxLowlight ? 'highlight-min' : ''}">${row.recoveryMax}</td>`
+                    ];
+                } else if (this.currentView === 'rawStats') {
+                    return [
+                        `<td class="${row.dpsStartHighlight ? 'highlight-max' : row.dpsStartLowlight ? 'highlight-min' : ''}">${row.dpsStart}</td>`,
+                        `<td class="${row.dpsFinalHighlight ? 'highlight-max' : row.dpsFinalLowlight ? 'highlight-min' : ''}">${row.dpsFinal}</td>`,
+                        `<td class="${row.hpStartHighlight ? 'highlight-max' : row.hpStartLowlight ? 'highlight-min' : ''}">${row.hpStart}</td>`,
+                        `<td class="${row.hpFinalHighlight ? 'highlight-max' : row.hpFinalLowlight ? 'highlight-min' : ''}">${row.hpFinal}</td>`,
+                        `<td class="${row.recoveryStartHighlight ? 'highlight-max' : row.recoveryStartLowlight ? 'highlight-min' : ''}">${row.recoveryStart}</td>`,
+                        `<td class="${row.recoveryFinalHighlight ? 'highlight-max' : row.recoveryFinalLowlight ? 'highlight-min' : ''}">${row.recoveryFinal}</td>`
+                    ];
+                } else {
+                    return [
+                        `<td class="${row.dpsAvgIncHighlight ? 'highlight-max' : row.dpsAvgIncLowlight ? 'highlight-min' : ''}">${row.dpsAvgInc}</td>`,
+                        `<td class="${row.dpsMaxIncHighlight ? 'highlight-max' : row.dpsMaxIncLowlight ? 'highlight-min' : ''}">${row.dpsMaxInc}</td>`,
+                        `<td class="${row.hpAvgIncHighlight ? 'highlight-max' : row.hpAvgIncLowlight ? 'highlight-min' : ''}">${row.hpAvgInc}</td>`,
+                        `<td class="${row.hpMaxIncHighlight ? 'highlight-max' : row.hpMaxIncLowlight ? 'highlight-min' : ''}">${row.hpMaxInc}</td>`,
+                        `<td class="${row.recoveryAvgIncHighlight ? 'highlight-max' : row.recoveryAvgIncLowlight ? 'highlight-min' : ''}">${row.recoveryAvgInc}</td>`,
+                        `<td class="${row.recoveryMaxIncHighlight ? 'highlight-max' : row.recoveryMaxIncLowlight ? 'highlight-min' : ''}">${row.recoveryMaxInc}</td>`
+                    ];
+                }
+            }
+
             generateComparisonTableData() {
                 const rows = [];
                 const maxValues = {};
+                const minValues = {}; // Add min values tracking
 
-                // Calculate max values for highlighting
+                // Calculate data and max/min values for highlighting based on current view
                 const statTypes = ['damagePerSecond', 'hitpoints', 'healthRecovery'];
-                ['Avg', 'Max'].forEach(type => {
-                    statTypes.forEach(stat => {
-                        const key = `${stat}${type}`;
-                        maxValues[key] = Math.max(...Object.keys(this.processedData).map(hero => {
-                            const heroStats = this.processedData[hero].stats[stat];
-                            return heroStats ? heroStats.summary[type.toLowerCase()] : 0;
-                        }));
+                
+                if (this.currentView === 'percentage') {
+                    // Calculate max and min values for percentage view
+                    ['Avg', 'Max'].forEach(type => {
+                        statTypes.forEach(stat => {
+                            const key = `${stat}${type}`;
+                            const values = Object.keys(this.processedData).map(hero => {
+                                const heroStats = this.processedData[hero].stats[stat];
+                                return heroStats ? heroStats.summary[type.toLowerCase()] : 0;
+                            });
+                            maxValues[key] = Math.max(...values);
+                            minValues[key] = Math.min(...values);
+                        });
                     });
-                });
 
-                // Generate rows
-                Object.keys(this.processedData).forEach(heroName => {
-                    const heroStats = this.processedData[heroName].stats;
-                    
-                    const dpsAvg = heroStats.damagePerSecond?.summary.avg || 0;
-                    const dpsMax = heroStats.damagePerSecond?.summary.max || 0;
-                    const hpAvg = heroStats.hitpoints?.summary.avg || 0;
-                    const hpMax = heroStats.hitpoints?.summary.max || 0;
-                    const recoveryAvg = heroStats.healthRecovery?.summary.avg || 0;
-                    const recoveryMax = heroStats.healthRecovery?.summary.max || 0;
+                    // Generate percentage rows
+                    Object.keys(this.processedData).forEach(heroName => {
+                        const heroStats = this.processedData[heroName].stats;
+                        
+                        const dpsAvg = heroStats.damagePerSecond?.summary.avg || 0;
+                        const dpsMax = heroStats.damagePerSecond?.summary.max || 0;
+                        const hpAvg = heroStats.hitpoints?.summary.avg || 0;
+                        const hpMax = heroStats.hitpoints?.summary.max || 0;
+                        const recoveryAvg = heroStats.healthRecovery?.summary.avg || 0;
+                        const recoveryMax = heroStats.healthRecovery?.summary.max || 0;
 
-                    rows.push({
-                        hero: heroName,
-                        dpsAvg: dpsAvg.toFixed(2) + '%',
-                        dpsMax: dpsMax.toFixed(2) + '%',
-                        hpAvg: hpAvg.toFixed(2) + '%',
-                        hpMax: hpMax.toFixed(2) + '%',
-                        recoveryAvg: recoveryAvg.toFixed(2) + '%',
-                        recoveryMax: recoveryMax.toFixed(2) + '%',
-                        dpsAvgHighlight: dpsAvg === maxValues.damagePerSecondAvg,
-                        dpsMaxHighlight: dpsMax === maxValues.damagePerSecondMax,
-                        hpAvgHighlight: hpAvg === maxValues.hitpointsAvg,
-                        hpMaxHighlight: hpMax === maxValues.hitpointsMax,
-                        recoveryAvgHighlight: recoveryAvg === maxValues.healthRecoveryAvg,
-                        recoveryMaxHighlight: recoveryMax === maxValues.healthRecoveryMax
+                        rows.push({
+                            hero: heroName,
+                            dpsAvg: dpsAvg.toFixed(2) + '%',
+                            dpsMax: dpsMax.toFixed(2) + '%',
+                            hpAvg: hpAvg.toFixed(2) + '%',
+                            hpMax: hpMax.toFixed(2) + '%',
+                            recoveryAvg: recoveryAvg.toFixed(2) + '%',
+                            recoveryMax: recoveryMax.toFixed(2) + '%',
+                            dpsAvgHighlight: dpsAvg === maxValues.damagePerSecondAvg,
+                            dpsMaxHighlight: dpsMax === maxValues.damagePerSecondMax,
+                            hpAvgHighlight: hpAvg === maxValues.hitpointsAvg,
+                            hpMaxHighlight: hpMax === maxValues.hitpointsMax,
+                            recoveryAvgHighlight: recoveryAvg === maxValues.healthRecoveryAvg,
+                            recoveryMaxHighlight: recoveryMax === maxValues.healthRecoveryMax,
+                            // Add min highlighting flags
+                            dpsAvgLowlight: dpsAvg === minValues.damagePerSecondAvg,
+                            dpsMaxLowlight: dpsMax === minValues.damagePerSecondMax,
+                            hpAvgLowlight: hpAvg === minValues.hitpointsAvg,
+                            hpMaxLowlight: hpMax === minValues.hitpointsMax,
+                            recoveryAvgLowlight: recoveryAvg === minValues.healthRecoveryAvg,
+                            recoveryMaxLowlight: recoveryMax === minValues.healthRecoveryMax
+                        });
                     });
-                });
+                } else if (this.currentView === 'rawStats') {
+                    // Calculate max and min values for raw stats view
+                    ['Start', 'Final'].forEach(type => {
+                        statTypes.forEach(stat => {
+                            const key = `${stat}${type}`;
+                            const values = Object.keys(this.processedData).map(hero => {
+                                const heroStats = this.processedData[hero].stats[stat];
+                                if (!heroStats || !heroStats.upgradeData || heroStats.upgradeData.length === 0) return 0;
+                                
+                                if (type === 'Start') {
+                                    return heroStats.upgradeData[0].previousValue;
+                                } else {
+                                    return heroStats.upgradeData[heroStats.upgradeData.length - 1].actualValue;
+                                }
+                            });
+                            maxValues[key] = Math.max(...values);
+                            minValues[key] = Math.min(...values);
+                        });
+                    });
 
-                return { rows, maxValues };
-            }
+                    // Generate raw stats rows
+                    Object.keys(this.processedData).forEach(heroName => {
+                        const heroStats = this.processedData[heroName].stats;
+                        
+                        const dpsStart = heroStats.damagePerSecond?.upgradeData?.[0]?.previousValue || 0;
+                        const dpsFinal = heroStats.damagePerSecond?.upgradeData?.[heroStats.damagePerSecond.upgradeData.length - 1]?.actualValue || 0;
+                        const hpStart = heroStats.hitpoints?.upgradeData?.[0]?.previousValue || 0;
+                        const hpFinal = heroStats.hitpoints?.upgradeData?.[heroStats.hitpoints.upgradeData.length - 1]?.actualValue || 0;
+                        const recoveryStart = heroStats.healthRecovery?.upgradeData?.[0]?.previousValue || 0;
+                        const recoveryFinal = heroStats.healthRecovery?.upgradeData?.[heroStats.healthRecovery.upgradeData.length - 1]?.actualValue || 0;
 
-            createLegend() {
-                const legend = document.createElement('div');
-                legend.className = 'legend';
-                legend.innerHTML = `
-                    <h3>📈 How to Read This Data</h3>
-                    <p><strong>Average %:</strong> The typical percentage increase you get per level for that stat</p>
-                    <p><strong>Max %:</strong> The biggest single-level percentage boost available for that stat</p>
-                    <p><strong>Green highlighting:</strong> The hero with the best performance in that category</p>
-                    <p><strong>Interactive Charts:</strong> Hover over data points to see exact values and level information</p>
-                    <p><strong>Strategic Tip:</strong> Focus on heroes/levels with higher percentage increases for maximum efficiency!</p>
-                `;
-                return legend;
+                        rows.push({
+                            hero: heroName,
+                            dpsStart: dpsStart.toLocaleString(),
+                            dpsFinal: dpsFinal.toLocaleString(),
+                            hpStart: hpStart.toLocaleString(),
+                            hpFinal: hpFinal.toLocaleString(),
+                            recoveryStart: recoveryStart.toLocaleString(),
+                            recoveryFinal: recoveryFinal.toLocaleString(),
+                            dpsStartHighlight: dpsStart === maxValues.damagePerSecondStart,
+                            dpsFinalHighlight: dpsFinal === maxValues.damagePerSecondFinal,
+                            hpStartHighlight: hpStart === maxValues.hitpointsStart,
+                            hpFinalHighlight: hpFinal === maxValues.hitpointsFinal,
+                            recoveryStartHighlight: recoveryStart === maxValues.healthRecoveryStart,
+                            recoveryFinalHighlight: recoveryFinal === maxValues.healthRecoveryFinal,
+                            // Add min highlighting flags
+                            dpsStartLowlight: dpsStart === minValues.damagePerSecondStart,
+                            dpsFinalLowlight: dpsFinal === minValues.damagePerSecondFinal,
+                            hpStartLowlight: hpStart === minValues.hitpointsStart,
+                            hpFinalLowlight: hpFinal === minValues.hitpointsFinal,
+                            recoveryStartLowlight: recoveryStart === minValues.healthRecoveryStart,
+                            recoveryFinalLowlight: recoveryFinal === minValues.healthRecoveryFinal
+                        });
+                    });
+                } else {
+                    // Raw increase view
+                    // Calculate max and min values for raw increase view
+                    ['AvgInc', 'MaxInc'].forEach(type => {
+                        statTypes.forEach(stat => {
+                            const key = `${stat}${type}`;
+                            const values = Object.keys(this.processedData).map(hero => {
+                                const heroStats = this.processedData[hero].stats[stat];
+                                if (!heroStats || !heroStats.upgradeData || heroStats.upgradeData.length === 0) return 0;
+                                
+                                const increases = heroStats.upgradeData.map(upgrade => 
+                                    upgrade.actualValue - upgrade.previousValue
+                                );
+                                
+                                if (type === 'AvgInc') {
+                                    return increases.reduce((sum, inc) => sum + inc, 0) / increases.length;
+                                } else {
+                                    return Math.max(...increases);
+                                }
+                            });
+                            maxValues[key] = Math.max(...values);
+                            minValues[key] = Math.min(...values);
+                        });
+                    });
+
+                    // Generate raw increase rows
+                    Object.keys(this.processedData).forEach(heroName => {
+                        const heroStats = this.processedData[heroName].stats;
+                        
+                        // Calculate DPS increases
+                        const dpsIncreases = heroStats.damagePerSecond?.upgradeData?.map(u => u.actualValue - u.previousValue) || [];
+                        const dpsAvgInc = dpsIncreases.length ? (dpsIncreases.reduce((s, i) => s + i, 0) / dpsIncreases.length) : 0;
+                        const dpsMaxInc = dpsIncreases.length ? Math.max(...dpsIncreases) : 0;
+                        
+                        // Calculate HP increases
+                        const hpIncreases = heroStats.hitpoints?.upgradeData?.map(u => u.actualValue - u.previousValue) || [];
+                        const hpAvgInc = hpIncreases.length ? (hpIncreases.reduce((s, i) => s + i, 0) / hpIncreases.length) : 0;
+                        const hpMaxInc = hpIncreases.length ? Math.max(...hpIncreases) : 0;
+                        
+                        // Calculate Recovery increases
+                        const recoveryIncreases = heroStats.healthRecovery?.upgradeData?.map(u => u.actualValue - u.previousValue) || [];
+                        const recoveryAvgInc = recoveryIncreases.length ? (recoveryIncreases.reduce((s, i) => s + i, 0) / recoveryIncreases.length) : 0;
+                        const recoveryMaxInc = recoveryIncreases.length ? Math.max(...recoveryIncreases) : 0;
+
+                        rows.push({
+                            hero: heroName,
+                            dpsAvgInc: dpsAvgInc.toFixed(1),
+                            dpsMaxInc: dpsMaxInc.toLocaleString(),
+                            hpAvgInc: hpAvgInc.toFixed(1),
+                            hpMaxInc: hpMaxInc.toLocaleString(),
+                            recoveryAvgInc: recoveryAvgInc.toFixed(1),
+                            recoveryMaxInc: recoveryMaxInc.toLocaleString(),
+                            dpsAvgIncHighlight: Math.abs(dpsAvgInc - maxValues.damagePerSecondAvgInc) < 0.1,
+                            dpsMaxIncHighlight: dpsMaxInc === maxValues.damagePerSecondMaxInc,
+                            hpAvgIncHighlight: Math.abs(hpAvgInc - maxValues.hitpointsAvgInc) < 0.1,
+                            hpMaxIncHighlight: hpMaxInc === maxValues.hitpointsMaxInc,
+                            recoveryAvgIncHighlight: Math.abs(recoveryAvgInc - maxValues.healthRecoveryAvgInc) < 0.1,
+                            recoveryMaxIncHighlight: recoveryMaxInc === maxValues.healthRecoveryMaxInc,
+                            // Add min highlighting flags
+                            dpsAvgIncLowlight: Math.abs(dpsAvgInc - minValues.damagePerSecondAvgInc) < 0.1,
+                            dpsMaxIncLowlight: dpsMaxInc === minValues.damagePerSecondMaxInc,
+                            hpAvgIncLowlight: Math.abs(hpAvgInc - minValues.hitpointsAvgInc) < 0.1,
+                            hpMaxIncLowlight: hpMaxInc === minValues.hitpointsMaxInc,
+                            recoveryAvgIncLowlight: Math.abs(recoveryAvgInc - minValues.healthRecoveryAvgInc) < 0.1,
+                            recoveryMaxIncLowlight: recoveryMaxInc === minValues.healthRecoveryMaxInc
+                        });
+                    });
+                }
+
+                return { rows, maxValues, minValues };
             }
 
             initializeCharts() {
